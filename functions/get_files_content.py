@@ -2,6 +2,7 @@ import os
 from config import *
 from google.genai import types
 
+
 def get_file_content(working_directory, file_path):
     relative_path = os.path.join(working_directory, file_path)
     file_path = os.path.abspath(relative_path)
@@ -30,7 +31,7 @@ schema_get_files_content = types.FunctionDeclaration(
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
-            "filepath": types.Schema(
+            "file_path": types.Schema(
                 type=types.Type.STRING,
                 description="The file path, relative to the working directory.",
             ),

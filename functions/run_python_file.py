@@ -63,7 +63,7 @@ schema_run_python_file = types.FunctionDeclaration(
             ),
             "args": types.Schema(
                 type=types.Type.STRING,
-                description="Arguments used to run the python file",
+                description="Arguments used to run the python file. This parameter is optional, so if any argument is provided, just run the file without args.",
             ),
         },
     ),
