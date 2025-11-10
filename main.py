@@ -16,19 +16,14 @@ api_key = os.environ.get("GEMINI_API_KEY")
 
 def main():
     parser = argparse.ArgumentParser(description="Makes a call to Gemini API when a prompt is given")
-
     parser.add_argument("input", help="User prompt")
     parser.add_argument("--verbose", action="store_true", help="Adds additional information about the response")
-
     args = parser.parse_args()
 
-
-    messages = [
-        types.Content(role="user", parts=[types.Part(text=args.input)]),
-    ]
+    messages = [types.Content(role="user", parts=[types.Part(text=args.input)])]
 
     available_functions = types.Tool(
-        function_declarations = [
+        function_declarations=[
             schema_get_files_info,
             schema_get_files_content,
             schema_run_python_file,
@@ -37,37 +32,51 @@ def main():
     )
 
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-001", 
-        contents=messages,
-        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, tools=[available_functions])
-    )
 
-    if args.verbose:
-        print(f"User prompt: {response.text}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+    for iteration in range(MAX_ITERS):
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=messages,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                tools=[available_functions]
+            )
+        )
 
-        for fx in response.function_calls:
-            print(f"Calling function: {fx.name}({fx.args})")
-            func_calling = call_function(fx, verbose=True)
+        if args.verbose:
+            print(f"\n--- Iteration {iteration+1}/{MAX_ITERS} ---")
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
-            if func_calling.parts[0].function_response.response == None:
-                raise Exception("Any response was generated")
-            else:
-                print(f"-> {func_calling.parts[0].function_response.response}")
-    else:
-        print(response.text)
+        stop = True
 
-        for fx in response.function_calls:
-            print(f"Calling function: {fx.name}({fx.args})")
-            func_calling = call_function(fx)
+        for candidate in response.candidates:
+            for part in candidate.content.parts:
+                if part.text:
+                    print(part.text)
+                    messages.append(types.Content(role="model", parts=[part]))
+                if part.function_call:
+                    stop = False
+                    fx = part.function_call
+                    if args.verbose:
+                        print(f"Calling function: {fx.name}({fx.args})")
+                    fx_response = call_function(fx, verbose=args.verbose)
+                    messages.append(
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part(
+                                    function_response=types.FunctionResponse(
+                                        name=fx.name,
+                                        response=fx_response
+                                    )
+                                )
+                            ]
+                        )
+                    )
 
-            if func_calling.parts[0].function_response.response == None:
-                raise Exception("Any response was generated")
-            else:
-                print(f"-> {func_calling.parts[0].function_response.response}")
-
+        if stop:
+            break
 
 if __name__ == "__main__":
     main()

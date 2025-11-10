@@ -31,12 +31,6 @@ def call_function(function_call, verbose=False):
                 ],
             )
     
-    return types.Content(
-        role="tool",
-        parts=[
-            types.Part.from_function_response(
-                name=function_call.name,
-                response={"result": fx_result},
-            )
-        ],
-    )
+    result = {"output": fx_result}
+    
+    return result

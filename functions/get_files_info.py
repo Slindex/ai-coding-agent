@@ -27,6 +27,8 @@ def get_files_info(working_directory, directory="."):
         item_size = os.path.getsize(item_path)
         is_dir = os.path.isdir(item_path)
         print(f"- {item}: file_size={item_size}, is_dir={is_dir}")
+    
+    return item_list
 
 
 schema_get_files_info = types.FunctionDeclaration(

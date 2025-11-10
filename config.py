@@ -1,4 +1,6 @@
 CHAR_LIMIT = 10000
+MAX_ITERS = 20
+
 SYSTEM_PROMPT = system_prompt = """
 You are a helpful AI coding agent.
 
